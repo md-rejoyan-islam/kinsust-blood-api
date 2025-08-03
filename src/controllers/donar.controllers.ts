@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
+import createError from "http-errors";
+import { RequestWithUser } from "../app/types";
 import { successResponse } from "../helper/responseHandler";
 import * as donarServices from "../services/donar.services";
 
@@ -14,15 +16,13 @@ import * as donarServices from "../services/donar.services";
  */
 
 const getAllBloodDonars = asyncHandler(async (req: Request, res: Response) => {
-  const { count, donars, pagination } =
-    await donarServices.getAllBloodDonars(req);
+  const { donars, pagination } = await donarServices.getAllBloodDonars(req);
 
   // response send
   successResponse(res, {
     statusCode: 200,
     message: "All Donar data fetched successfully",
     payload: {
-      total: count,
       data: donars,
       pagination,
     },
@@ -64,11 +64,17 @@ const getSingleBloodDonarById = asyncHandler(
  */
 
 const createBloodDonar = asyncHandler(async (req: any, res: Response) => {
-  const result = await donarServices.createBloodDonar(req);
+  const { name, phone, bloodGroup } = req.body;
+
+  const result = await donarServices.createBloodDonar({
+    name,
+    phone,
+    bloodGroup,
+  });
 
   // response send
   successResponse(res, {
-    statusCode: 200,
+    statusCode: 201,
     message: "Blood donor created successfully",
     payload: {
       data: result,
@@ -85,18 +91,26 @@ const createBloodDonar = asyncHandler(async (req: any, res: Response) => {
  * @returns {Object} Updated blood donor
  */
 
-const updateBloodDonarById = asyncHandler(async (req: any, res: Response) => {
-  const donar = await donarServices.updateBloodDonarById(req);
+const updateBloodDonarById = asyncHandler(
+  async (req: RequestWithUser, res: Response) => {
+    const id = req.params.id;
+    const lastEditedBy = req?.me?.email;
+    const donar = await donarServices.updateBloodDonarById(
+      id,
+      req.body,
+      lastEditedBy
+    );
 
-  // response send
-  successResponse(res, {
-    statusCode: 200,
-    message: "Blood donor date updated successfully",
-    payload: {
-      data: donar,
-    },
-  });
-});
+    // response send
+    successResponse(res, {
+      statusCode: 200,
+      message: "Blood donor date updated successfully",
+      payload: {
+        data: donar,
+      },
+    });
+  }
+);
 
 /**
  * @method DELETE
@@ -132,15 +146,23 @@ const deleteBloodDonarById = asyncHandler(
  * @returns {Object} Deleted blood donor
  */
 
-const bulkCreateBloodDonar = asyncHandler(async (req: any, res: Response) => {
-  await donarServices.bulkCreateBloodDonar(req);
+const bulkCreateBloodDonar = asyncHandler(
+  async (req: RequestWithUser, res: Response) => {
+    // data will be array
+    if (!Array.isArray(req.body))
+      throw createError(400, "Data must be an array of object.");
 
-  // response send
-  successResponse(res, {
-    statusCode: 200,
-    message: "Blood donor created successfully",
-  });
-});
+    // const lastEditedBy = req?.me?.email;
+
+    await donarServices.bulkCreateBloodDonar(req.body);
+
+    // response send
+    successResponse(res, {
+      statusCode: 200,
+      message: "Blood donor created successfully",
+    });
+  }
+);
 
 /**
  * @method DELETE

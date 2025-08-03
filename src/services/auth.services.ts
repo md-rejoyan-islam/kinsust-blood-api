@@ -13,7 +13,7 @@ const userLogin = async (email: string, password: string) => {
   // user check
   if (!user)
     throw createError(
-      400,
+      404,
       "Couldn't find any user account!. Please contact us."
     );
 
@@ -27,7 +27,15 @@ const userLogin = async (email: string, password: string) => {
     +process.env.JWT_LOGIN_EXPIRE!
   );
 
-  return { user, accessToken };
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+    accessToken,
+  };
 };
 
 const me = async (me: any) => {

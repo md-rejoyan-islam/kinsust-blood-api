@@ -30,6 +30,8 @@ const isLoggedIn = asyncHandler(
             sameSite: "none",
           });
 
+          // send response
+
           errorResponse(res, {
             statusCode: 401,
             message: "Unauthorized, Invalid access token.Please login again",

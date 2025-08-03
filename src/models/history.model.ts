@@ -1,12 +1,14 @@
 import { DataTypes, Model } from "sequelize";
+import { bloodGroupEnum } from "../app/types";
 import { sequelize } from "../config/db";
+type BloodGroup = keyof typeof bloodGroupEnum;
 
 interface HistoryAttributes {
   id: string;
   donarId: string;
   phone: string;
   name: string;
-  bloodGroup: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+  bloodGroup: BloodGroup;
   lastDonationDate: string;
   editedBy?: string;
 }
@@ -16,7 +18,7 @@ class History extends Model<HistoryAttributes> implements HistoryAttributes {
   public donarId!: string;
   public phone!: string;
   public name!: string;
-  public bloodGroup!: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+  public bloodGroup!: BloodGroup;
   public lastDonationDate!: string;
   public editedBy?: string;
 

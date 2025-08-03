@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { bloodGroupEnum } from "../app/types";
+import { checkBDPhoneNumber } from "../helper/helper";
 
 const createDonarSchema = z.object({
   body: z.object({
@@ -11,8 +12,8 @@ const createDonarSchema = z.object({
       .min(2, { message: "Name must be at least 2 characters long " }),
 
     bloodGroup: z.enum(bloodGroupEnum, {
-      required_error: "Blood group is required",
-      invalid_type_error: "Blood group must be one of the valid options",
+      // required_error: "Blood group is required",
+      // invalid_type_error: "Blood group must be one of the valid options",
       description: "Valid blood groups are A+, A-, B+, B-, O+, O-, AB+, AB-",
       errorMap: () => {
         return {
@@ -20,20 +21,35 @@ const createDonarSchema = z.object({
         };
       },
     }),
-    contactNo: z
+    phone: z
       .string({
         required_error: "Contact number is required",
         invalid_type_error: "Contact number must be a string",
       })
       .length(11, {
         message: "Contact number must be exactly 11 characters long",
-      }),
+      })
+      .refine(
+        (val) => {
+          return checkBDPhoneNumber(val);
+        },
+        {
+          message: "Contact number must be a valid Bangladeshi phone number",
+        }
+      ),
     address: z
       .string({
         required_error: "Address is required",
         invalid_type_error: "Address must be a string",
       })
-      .min(2, { message: "Address must be at least 2 characters long" }),
+      .min(2, { message: "Address must be at least 2 characters long" })
+      .optional(),
+    email: z
+      .string({
+        invalid_type_error: "Email must be a string",
+      })
+      .email({ message: "Invalid email format" })
+      .optional(),
   }),
 });
 
@@ -48,11 +64,11 @@ const updateDonarSchema = z.object({
       .enum(bloodGroupEnum, {
         invalid_type_error: "Blood group must be one of the valid options",
         description: "Valid blood groups are A+, A-, B+, B-, O+, O-, AB+, AB-",
-        errorMap: () => {
-          return {
-            message: `Invalid blood group. Valid options are: ${bloodGroupEnum.join(", ")}`,
-          };
-        },
+        // errorMap: () => {
+        //   return {
+        //     message: `Invalid blood group. Valid options are: ${bloodGroupEnum.join(", ")}`,
+        //   };
+        // },
       })
       .optional(),
     contactNo: z

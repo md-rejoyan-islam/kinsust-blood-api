@@ -38,10 +38,12 @@ const getAllUsers = async (req: Request) => {
 
 const getSingleUserById = async (id: string) => {
   // find user by id
-  const user = await UserModel.findByPk(id);
+  const user = await UserModel.findByPk(id, {
+    attributes: { exclude: ["password", "createdAt", "updatedAt"] },
+  });
 
   // if user data not found
-  if (!user) throw createError(400, "Couldn't find any user data.");
+  if (!user) throw createError.NotFound("Couldn't find any user data.");
 
   return user;
 };
@@ -60,18 +62,24 @@ const createUser = async (
     where: { email: body.email },
   });
 
-  // can't create superAdmin user
-  if (body.role === "superAdmin")
-    throw createError(400, "You can't create superAdmin user.");
+  // can't create superadmin user
+  if (body.role === "superadmin")
+    throw createError(400, "You can't create superadmin user.");
 
-  // admin can't create superAdmin user
-  if (body.role === "admin" && role !== "superAdmin")
+  // admin can't create superadmin user
+  if (body.role === "admin" && role !== "superadmin")
     throw createError(
       400,
-      "You can't create admin user.Only superAdmin can create admin user."
+      "You can't create admin user.Only superadmin can create admin user."
     );
 
-  if (user) throw createError.BadRequest("Email already exists.");
+  if (user) throw createError.Conflict("Email already exists.");
+
+  console.log({
+    ...body,
+    role: body.role as keyof typeof userRoleEnum,
+    id: crypto.randomUUID(),
+  });
 
   // create user
   const result = await UserModel.create({
@@ -98,6 +106,11 @@ const updateUserById = async (
   // if user data not found
   if (!user) throw createError(400, "Couldn't find any user data.");
 
+  // can't update superadmin user
+  if (body.role === "superadmin" && user.id !== id) {
+    throw createError(400, "You can't update superadmin user.");
+  }
+
   // if email changed
   let userByEmail = null;
 
@@ -111,9 +124,9 @@ const updateUserById = async (
   if (userByEmail && userByEmail.id !== id)
     throw createError.BadRequest("Email already exists.");
 
-  // if role changed to superAdmin
-  if (body.role === "superAdmin")
-    throw createError(400, "You can't update role to superAdmin.");
+  // if role changed to superadmin
+  if (body.role === "superadmin")
+    throw createError(400, "You can't update role to superadmin.");
 
   // update user data
   await UserModel.update(
@@ -134,15 +147,15 @@ const deleteUserById = async (id: string, role: string) => {
   const user = await UserModel.findByPk(id);
 
   // if user data not found
-  if (!user) throw createError(400, "Couldn't find any user data.");
+  if (!user) throw createError.NotFound("Couldn't find any user data.");
 
   // if user is admin and trying to delete other admin
   if (user.role.toString() === "admin" && role === "admin" && user.id !== id)
     throw createError(400, "You can't delete admin user.");
 
-  // if user is superAdmin
-  if (user.role?.toString() === "superAdmin")
-    throw createError(400, "You can't delete superAdmin.");
+  // if user is superadmin
+  if (user.role?.toString() === "superadmin")
+    throw createError(400, "You can't delete superadmin.");
 
   // delete user data
   await user.destroy();
@@ -155,6 +168,10 @@ const passwordChange = async (id: string, password?: string) => {
   const user = await UserModel.findByPk(id);
   if (!user)
     throw createError(400, "Couldn't find any user account with this id");
+
+  // if user is superadmin
+  if (user.role?.toString() === "superadmin" && id !== user.id)
+    throw createError(400, "You can't change superadmin password.");
 
   // update user data
   await UserModel.update(

@@ -3,6 +3,7 @@ import csv from "csvtojson";
 import { Request } from "express";
 import { readFileSync } from "fs";
 import createError from "http-errors";
+import { bloodGroupEnum } from "../app/types";
 import filterQuery from "../helper/filterQuery";
 import { checkBDPhoneNumber, isEmail } from "../helper/helper";
 import DonarModel from "../models/donar.model";
@@ -36,7 +37,7 @@ const getAllBloodDonars = async (req: Request) => {
     nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
   };
 
-  return { count, donars, pagination };
+  return { donars, pagination };
 };
 
 const getSingleBloodDonarById = async (id: string) => {
@@ -44,54 +45,48 @@ const getSingleBloodDonarById = async (id: string) => {
   const donar = await DonarModel.findByPk(id);
 
   // if donar data not found
-  if (!donar) throw createError(400, "Couldn't find any donar data.");
+  if (!donar) throw createError(404, "Couldn't find any donar data.");
 
   return donar;
 };
 
-const createBloodDonar = async (req: any) => {
-  const { name, phone, bloodGroup } = req.body;
-  // name validation
-  if (!name) throw createError.BadRequest("Name is required.");
-  // phone validation
-  if (!phone) throw createError.BadRequest("Phone number is required.");
-  // blood group validation
-  if (!bloodGroup) throw createError.BadRequest("Blood group is required.");
-
+const createBloodDonar = async (body: {
+  name: string;
+  phone: string;
+  bloodGroup: keyof typeof bloodGroupEnum;
+}) => {
   // check donar phone number
   const existingDonar = await DonarModel.findOne({
-    where: { phone: req.body.phone },
+    where: { phone: body.phone },
   });
 
   //  donar already exists
-  if (existingDonar) throw createError(404, "Phone number already exists.");
+  if (existingDonar) throw createError.Conflict("Phone number already exists.");
 
   // create donar data
   const result = await DonarModel.create({
-    ...req.body,
+    ...body,
     id: crypto.randomUUID(),
-    lastEditedBy: req?.me?.email,
-    lastDonationDate: req?.body?.lastDonationDate
-      ? req?.body?.lastDonationDate
-      : null,
   });
 
   return result;
 };
 
-const updateBloodDonarById = async (req: any) => {
-  const id = req.params.id;
-
+const updateBloodDonarById = async (
+  id: string,
+  body: any,
+  lastEditedBy: string
+) => {
   // find donar by id
   const donarData = await DonarModel.findByPk(id);
 
   // if donar data not found
-  if (!donarData) throw createError(400, "Couldn't find any donar data.");
+  if (!donarData) throw createError(404, "Couldn't find any donar data.");
 
   // update options
   const updateOptions = {
-    ...req.body,
-    lastEditedBy: req?.me?.email,
+    lastEditedBy,
+    ...body,
   };
 
   // update donar data
@@ -104,16 +99,16 @@ const updateBloodDonarById = async (req: any) => {
 
   // if have donar Last donation date then add it to history
 
-  if (req?.body?.lastDonationDate) {
+  if (body?.lastDonationDate) {
     // create history data
     await HistoryModel.create({
+      editedBy: lastEditedBy,
       name: donarData.name,
-      bloodGroup: donarData.bloodGroup,
-      lastDonationDate: req.body.lastDonationDate,
+      bloodGroup: donarData.bloodGroup as keyof typeof bloodGroupEnum,
+      lastDonationDate: body.lastDonationDate,
       donarId: id,
       id: crypto.randomUUID(),
       phone: donarData.phone,
-      editedBy: req?.me?.email,
     });
   }
 
@@ -128,21 +123,26 @@ const deleteBloodDonarById = async (id: string) => {
   const donar = await DonarModel.findByPk(id);
 
   // if donar data not found
-  if (!donar) throw createError(400, "Couldn't find any donar data.");
+  if (!donar) throw createError(404, "Couldn't find any donar data.");
 
   // data  delete from database
-  await donar.destroy({
-    where: { id },
-  } as any);
+  await DonarModel.destroy({
+    where: {
+      id,
+    },
+  });
 
   return donar;
 };
 
-const bulkCreateBloodDonar = async (req: any) => {
-  // data will be array
-  if (!Array.isArray(req.body))
-    throw createError(400, "Data must be an array of object.");
-
+const bulkCreateBloodDonar = async (
+  body: {
+    name: string;
+    phone: string;
+    bloodGroup: keyof typeof bloodGroupEnum;
+  }[]
+  // lastEditedBy: string
+) => {
   // before all data
   const beforeAllData = await DonarModel.findAll({
     attributes: ["phone"],
@@ -151,29 +151,39 @@ const bulkCreateBloodDonar = async (req: any) => {
   const allPhoneNumbers = beforeAllData.map((data) => data.phone);
 
   // data validation
-  req.body.filter((item: any, index: number) => {
-    // id generate
-    item.id = crypto.randomUUID();
+  body.filter(
+    (
+      item: {
+        name: string;
+        phone: string;
+        bloodGroup: keyof typeof bloodGroupEnum;
+      },
+      index: number
+    ) => {
+      // name, phone number and blood group is required
+      if (!item.name || !item.phone || !item.bloodGroup) {
+        throw createError.BadRequest(
+          `Name, phone number and blood group is required for index : ${index}`
+        );
+      }
 
-    // name, phone number and blood group is required
-    if (!item.name || !item.phone || !item.bloodGroup) {
-      throw createError.BadRequest(
-        `Name, phone number and blood group is required for index : ${index}`
-      );
+      // phone number check for duplicate
+      else if (allPhoneNumbers.includes(item.phone)) {
+        throw createError.BadRequest(
+          `Phone number already exists for index : ${index}`
+        );
+      }
     }
-    // phone number check for duplicate
-    else if (allPhoneNumbers.includes(item.phone)) {
-      throw createError.BadRequest(
-        `Phone number already exists for index : ${index}`
-      );
-    }
-  });
+  );
 
   // data  delete from database
   await DonarModel.bulkCreate({
-    ...req.body,
-    lastEditedBy: req?.me?.email,
-  } as any);
+    // lastEditedBy,
+    ...body.map((data) => ({
+      ...data,
+      id: crypto.randomUUID(),
+    })),
+  });
 };
 
 const bulkDeleteBloodDonar = async (ids: string[]) => {

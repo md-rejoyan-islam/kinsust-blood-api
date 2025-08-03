@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
 import { Router } from "express";
-
 import createError from "http-errors";
 import { successResponse } from "../helper/responseHandler";
 import errorHandler from "../middlewares/errorHandler";

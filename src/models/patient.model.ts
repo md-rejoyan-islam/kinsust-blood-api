@@ -1,12 +1,14 @@
 import { DataTypes, Model } from "sequelize";
+import { bloodGroupEnum } from "../app/types";
 import { sequelize } from "../config/db";
+type BloodGroup = keyof typeof bloodGroupEnum;
 
 interface PatientAttributes {
   id: string;
   amount: string;
   location: string;
   phone: string;
-  bloodGroup: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+  bloodGroup: BloodGroup;
   date?: string;
   editedBy?: string;
   comment?: string;
@@ -17,7 +19,7 @@ class Patient extends Model<PatientAttributes> implements PatientAttributes {
   public amount!: string;
   public location!: string;
   public phone!: string;
-  public bloodGroup!: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+  public bloodGroup!: BloodGroup;
   public date?: string;
   public editedBy?: string;
   public comment?: string;

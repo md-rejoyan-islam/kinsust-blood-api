@@ -1,5 +1,8 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../config/db";
+import { bloodGroupEnum } from "./../app/types";
+
+type BloodGroup = keyof typeof bloodGroupEnum;
 
 interface DonarAttributes {
   id: string;
@@ -7,7 +10,7 @@ interface DonarAttributes {
   email?: string;
   age?: string;
   phone: string;
-  bloodGroup: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+  bloodGroup: BloodGroup;
   department?: string;
   session?: string;
   homeDistrict?: string;
@@ -23,7 +26,7 @@ class Donar extends Model<DonarAttributes> implements DonarAttributes {
   public email?: string;
   public age?: string;
   public phone!: string;
-  public bloodGroup!: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+  public bloodGroup!: BloodGroup;
   public department?: string;
   public session?: string;
   public homeDistrict?: string;

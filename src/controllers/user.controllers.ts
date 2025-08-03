@@ -98,7 +98,8 @@ const updateUserById = asyncHandler(
     const id = req.params.id;
 
     const userRole = req.me?.role;
-    if (userRole.role === "moderator") {
+
+    if (userRole === "moderator") {
       if (id !== req.me?.id)
         throw createError(403, "You are not allowed to update this user.");
       else if (req.body.role) {
@@ -137,7 +138,7 @@ const deleteUserById = asyncHandler(
     const userRole = req.me?.role;
 
     // if user is moderator can not delete other users
-    if (userRole.role === "moderator" && id !== req.me?.id) {
+    if (userRole === "moderator" && id !== req.me?.id) {
       throw createError(403, "You are not allowed to delete this user.");
     }
 
@@ -169,20 +170,29 @@ const deleteUserById = asyncHandler(
  *
  */
 
-const passwordChange = asyncHandler(async (req: Request, res: Response) => {
-  const { password } = req.body;
-  const { id } = req.params;
-  const result = await userServices.passwordChange(id, password);
+const passwordChange = asyncHandler(
+  async (req: RequestWithUser, res: Response) => {
+    const { password } = req.body;
 
-  // success response send
-  successResponse(res, {
-    statusCode: 200,
-    message: "Successfully password updated.",
-    payload: {
-      data: result,
-    },
-  });
-});
+    const id = req.params.id;
+
+    const userRole = req.me?.role;
+
+    if (userRole === "moderator" && id !== req.me?.id) {
+      throw createError(403, "You are not allowed to update this user.");
+    }
+    const result = await userServices.passwordChange(id, password);
+
+    // success response send
+    successResponse(res, {
+      statusCode: 200,
+      message: "Successfully password updated.",
+      payload: {
+        data: result,
+      },
+    });
+  }
+);
 
 export {
   createUser,

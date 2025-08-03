@@ -15,4 +15,4 @@ export const bloodGroupEnum = [
   "AB-",
 ] as const;
 
-export const userRoleEnum = ["admin", "superAdmin", "moderator"] as const;
+export const userRoleEnum = ["admin", "superadmin", "moderator"] as const;

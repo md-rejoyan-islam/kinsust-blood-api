@@ -12,6 +12,7 @@ import validate from "../middlewares/validate";
 import { isLoggedIn } from "../middlewares/verify";
 import {
   createUserSchema,
+  getAllUserSchema,
   passwordChangeSchema,
   updateUserSchema,
 } from "../validations/user.validation";
@@ -23,7 +24,7 @@ userRouter.use(isLoggedIn);
 // get all users and create a new user data
 userRouter
   .route("/")
-  .get(getAllUsers)
+  .get(validate(getAllUserSchema), getAllUsers)
   .post(
     authorization("admin", "superadmin"),
     validate(createUserSchema),
@@ -42,12 +43,8 @@ userRouter
 // get,update and delete a user data
 userRouter
   .route("/:id")
-  .get(authorization("admin", "superadmin", "moderator"), getSingleUserById)
-  .put(
-    authorization("admin", "superadmin", "moderator"),
-    validate(updateUserSchema),
-    updateUserById
-  )
+  .get(getSingleUserById)
+  .put(validate(updateUserSchema), updateUserById)
   .delete(authorization("admin", "superadmin"), deleteUserById);
 
 export default userRouter;

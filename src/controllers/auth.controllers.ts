@@ -58,7 +58,7 @@ const userLogin = asyncHandler(async (req: Request, res: Response) => {
  * @apiFailed         { success: false , error: { status, message }
  *
  */
-const userLogout = (_req: Request, res: Response) => {
+const userLogout = (_req: RequestWithUser, res: Response) => {
   // clear cookie
   res?.clearCookie("accessToken", {
     httpOnly: true,

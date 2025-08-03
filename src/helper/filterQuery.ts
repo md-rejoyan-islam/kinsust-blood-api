@@ -32,6 +32,8 @@ const filterQuery = (req: Request) => {
   // queries
   const queries: any = {};
 
+  console.log(req.query);
+
   // Specify the fields to display
   if (req.query.fields) {
     const fields = (req.query.fields as string).split(",");

@@ -14,11 +14,11 @@ const createPatientSchema = z.object({
       required_error: "Blood group is required",
       invalid_type_error: "Blood group must be one of the valid options",
       description: "Valid blood groups are A+, A-, B+, B-, O+, O-, AB+, AB-",
-      errorMap: () => {
-        return {
-          message: `Invalid blood group. Valid options are: ${bloodGroupEnum.join(", ")}`,
-        };
-      },
+      // errorMap: () => {
+      //   return {
+      //     message: `Invalid blood group. Valid options are: ${bloodGroupEnum.join(", ")}`,
+      //   };
+      // },
     }),
     contactNo: z
       .string({
@@ -44,11 +44,11 @@ const updatePatientSchema = z.object({
       .enum(bloodGroupEnum, {
         invalid_type_error: "Blood group must be one of the valid options",
         description: "Valid blood groups are A+, A-, B+, B-, O+, O-, AB+, AB-",
-        errorMap: () => {
-          return {
-            message: `Invalid blood group. Valid options are: ${bloodGroupEnum.join(", ")}`,
-          };
-        },
+        // errorMap: () => {
+        //   return {
+        //     message: `Invalid blood group. Valid options are: ${bloodGroupEnum.join(", ")}`,
+        //   };
+        // },
       })
       .optional(),
     contactNo: z

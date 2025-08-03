@@ -21,8 +21,8 @@ const createUserSchema = z.object({
       .min(6, { message: "Password must be at least 6 characters long" }),
 
     role: z.enum(userRoleEnum, {
-      required_error: "Role is required",
-      invalid_type_error: "Role must be one of the valid options",
+      // required_error: "Role is required",
+      // invalid_type_error: "Role must be one of the valid options",
       description: "Valid roles are user, admin, and superadmin",
       errorMap: () => {
         return {
@@ -50,12 +50,12 @@ const updateUserSchema = z.object({
       .string({
         invalid_type_error: "Password must be a string",
       })
-      .length(6, { message: "Password must be exactly 6 characters long" })
+      .min(6, { message: "Password must be at least 6 characters long" })
       .optional(),
     role: z
       .enum(userRoleEnum, {
-        invalid_type_error: "Role must be one of the valid options",
-        description: "Valid roles are user, admin, and superadmin",
+        // invalid_type_error: "Role must be one of the valid options",
+        // description: "Valid roles are user, admin, and superadmin",
         errorMap: () => {
           return {
             message: `Invalid role. Valid options are: ${userRoleEnum.join(",")}`,
@@ -84,9 +84,54 @@ const passwordChangeSchema = z.object({
           message: "Confirm password must be at least 6 characters long",
         }),
     })
-    .refine((data) => data.password !== data.confirmPassword, {
-      message: "Password and confirm password must be the same",
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "Password and confirm password must be the same.",
     }),
 });
 
-export { createUserSchema, passwordChangeSchema, updateUserSchema };
+const fields = ["id", "name", "email", "role", "createdAt", "updatedAt"];
+
+const getAllUserSchema = z.object({
+  query: z.object({
+    page: z
+      .string({
+        required_error: "Page is required",
+        invalid_type_error: "Page must be a string",
+      })
+      .optional(), // e.g., "?page=1"
+    limit: z
+      .string({
+        required_error: "Limit is required",
+        invalid_type_error: "Limit must be a string",
+      })
+      .optional(), // e.g., "?limit=10"
+    sort: z
+      .string({
+        required_error: "Sort is required",
+        invalid_type_error: "Sort must be a string",
+      })
+      .optional(), // e.g., "?sort=-createdAt
+    fields: z
+      .string({
+        required_error: "Fields are required",
+        invalid_type_error: "Fields must be a string",
+      })
+      .refine(
+        (value?: string) => {
+          const fieldArray = value?.split(",");
+          return fieldArray?.every((field) => fields.includes(field));
+        },
+        {
+          message: `Invalid fields. Valid fields are: ${fields.join(", ")}`,
+        }
+      )
+      .optional(), // e.g., "?fields=id,name,email"
+  }),
+});
+
+export {
+  createUserSchema,
+  getAllUserSchema,
+  passwordChangeSchema,
+  updateUserSchema,
+};

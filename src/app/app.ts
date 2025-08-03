@@ -14,7 +14,7 @@ app.use(limiter);
 
 // middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 
 // cookie parser
 app.use(cookieParser());
