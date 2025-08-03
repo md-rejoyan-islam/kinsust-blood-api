@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
+import createError from "http-errors";
 import { RequestWithUser } from "../app/types";
 import { successResponse } from "../helper/responseHandler";
 import * as userServices from "../services/user.services";
@@ -14,14 +15,14 @@ import * as userServices from "../services/user.services";
  */
 
 const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
-  const { count, users } = await userServices.getAllUsers();
+  const { users, pagination } = await userServices.getAllUsers(req);
 
   // response send
   successResponse(res, {
     statusCode: 200,
     message: "All user data fetched successfully",
     payload: {
-      total: count,
+      pagination,
       data: users,
     },
   });
@@ -61,8 +62,17 @@ const getSingleUserById = asyncHandler(async (req: Request, res: Response) => {
 
 const createUser = asyncHandler(async (req: RequestWithUser, res: Response) => {
   const userRole = req.me?.role;
+  const { name, email, password, role } = req.body;
 
-  const result = await userServices.createUser(req.body, userRole);
+  const result = await userServices.createUser(
+    {
+      name,
+      email,
+      password,
+      role,
+    },
+    userRole
+  );
 
   // response send
   successResponse(res, {
@@ -83,19 +93,34 @@ const createUser = asyncHandler(async (req: RequestWithUser, res: Response) => {
  * @returns {Object} A user
  */
 
-const updateUserById = asyncHandler(async (req: Request, res: Response) => {
-  const id = req.params.id;
-  const result = await userServices.updateUserById(id, req.body);
+const updateUserById = asyncHandler(
+  async (req: RequestWithUser, res: Response) => {
+    const id = req.params.id;
 
-  // response send
-  successResponse(res, {
-    statusCode: 200,
-    message: "User updated successfully",
-    payload: {
-      data: result,
-    },
-  });
-});
+    const userRole = req.me?.role;
+    if (userRole.role === "moderator") {
+      if (id !== req.me?.id)
+        throw createError(403, "You are not allowed to update this user.");
+      else if (req.body.role) {
+        throw createError(
+          403,
+          "You are not allowed to update your role as moderator."
+        );
+      }
+    }
+
+    const result = await userServices.updateUserById(id, req.body);
+
+    // response send
+    successResponse(res, {
+      statusCode: 200,
+      message: "User updated successfully",
+      payload: {
+        data: result,
+      },
+    });
+  }
+);
 
 /**
  * @method DELETE
@@ -106,19 +131,28 @@ const updateUserById = asyncHandler(async (req: Request, res: Response) => {
  * @returns {Object} A user
  */
 
-const deleteUserById = asyncHandler(async (req: Request, res: Response) => {
-  const id = req.params.id;
-  const user = await userServices.deleteUserById(id);
+const deleteUserById = asyncHandler(
+  async (req: RequestWithUser, res: Response) => {
+    const id = req.params.id;
+    const userRole = req.me?.role;
 
-  // response send
-  successResponse(res, {
-    statusCode: 200,
-    message: "User deleted successfully",
-    payload: {
-      data: user,
-    },
-  });
-});
+    // if user is moderator can not delete other users
+    if (userRole.role === "moderator" && id !== req.me?.id) {
+      throw createError(403, "You are not allowed to delete this user.");
+    }
+
+    const user = await userServices.deleteUserById(id, userRole);
+
+    // response send
+    successResponse(res, {
+      statusCode: 200,
+      message: "User deleted successfully",
+      payload: {
+        data: user,
+      },
+    });
+  }
+);
 
 /**
  *

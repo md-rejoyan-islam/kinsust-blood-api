@@ -7,19 +7,18 @@ import {
   passwordChange,
   updateUserById,
 } from "../controllers/user.controllers";
-import { isLoggedIn } from "../middlewares/verify";
 import authorization from "../middlewares/authorization";
+import validate from "../middlewares/validate";
+import { isLoggedIn } from "../middlewares/verify";
+import {
+  createUserSchema,
+  passwordChangeSchema,
+  updateUserSchema,
+} from "../validations/user.validation";
 
 const userRouter = express.Router();
 
 userRouter.use(isLoggedIn);
-
-import validate from "../middlewares/validate";
-import {
-  createUserSchema,
-  updateUserSchema,
-  passwordChangeSchema,
-} from "../validations/user.validation";
 
 // get all users and create a new user data
 userRouter

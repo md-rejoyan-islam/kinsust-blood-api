@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
+import { RequestWithUser } from "../app/types";
 import { successResponse } from "../helper/responseHandler";
 import * as authServices from "../services/auth.services";
 
@@ -29,7 +30,7 @@ const userLogin = asyncHandler(async (req: Request, res: Response) => {
   // response send
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 1, // 1 days
+    maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     secure: true, // only https
     sameSite: "none",
   });
@@ -57,10 +58,11 @@ const userLogin = asyncHandler(async (req: Request, res: Response) => {
  * @apiFailed         { success: false , error: { status, message }
  *
  */
-const userLogout = (req: Request, res: Response) => {
+const userLogout = (_req: Request, res: Response) => {
+  // clear cookie
   res?.clearCookie("accessToken", {
     httpOnly: true,
-    secure: true, // only https
+    secure: true,
     sameSite: "none",
   });
 
@@ -85,7 +87,7 @@ const userLogout = (req: Request, res: Response) => {
  * @apiFailed         { success: false , error: { status, message }
  *
  */
-const me = asyncHandler(async (req: any, res: Response) => {
+const me = asyncHandler(async (req: RequestWithUser, res: Response) => {
   const user = await authServices.me(req.me);
   successResponse(res, {
     statusCode: 200,

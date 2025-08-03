@@ -1,12 +1,10 @@
 import createError from "http-errors";
 import createJWT from "../helper/createJWT";
-import matchPassword from "../helper/matchPassword";
+
+import { matchPassword } from "../helper/hashPassword";
 import User from "../models/user.model";
 
-const userLogin = async (email?: string, password?: string) => {
-  if (!email) throw createError(400, "Please provide email");
-  if (!password) throw createError(400, "Please provide password");
-
+const userLogin = async (email: string, password: string) => {
   // get user by emaill
   const user = await User.findOne({
     where: { email },

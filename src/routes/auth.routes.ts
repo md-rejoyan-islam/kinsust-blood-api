@@ -1,13 +1,12 @@
 import express from "express";
 import { me, userLogin, userLogout } from "../controllers/auth.controllers";
+import validate from "../middlewares/validate";
 import { isLoggedIn, isLoggedOut } from "../middlewares/verify";
+import { loginSchema } from "../validations/auth.validation";
 
 const authRouter = express.Router();
 
 // user login
-import validate from "../middlewares/validate";
-import { loginSchema } from "../validations/auth.validation";
-
 authRouter.route("/login").post(isLoggedOut, validate(loginSchema), userLogin);
 
 // user logout

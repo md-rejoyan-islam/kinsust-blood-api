@@ -60,7 +60,8 @@ const isLoggedIn = asyncHandler(
 const isLoggedOut = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     // get cookie from request
-    const token = req?.cookies?.accessToken;
+    const token =
+      req?.cookies?.accessToken || req?.headers?.authorization?.split(" ")[1];
 
     if (token) {
       jwt.verify(token, process.env.JWT_LOGIN_SECRET_KEY!, (err: any) => {

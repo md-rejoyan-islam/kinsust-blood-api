@@ -1,14 +1,39 @@
 import crypto from "crypto";
+import type { Request } from "express";
 import createError from "http-errors";
+import { userRoleEnum } from "../app/types";
+import filterQuery from "../helper/filterQuery";
 import UserModel from "../models/user.model";
 
-const getAllUsers = async () => {
-  // get all users
-  const { count, rows: users } = await UserModel.findAndCountAll({});
-  // if no user found
-  if (!count) throw createError(400, "Couldn't find any user data.");
+const getAllUsers = async (req: Request) => {
+  // filter query
+  const { queries, filters } = filterQuery(req);
 
-  return { count, users };
+  // get all users
+  const { count, rows: users } = await UserModel.findAndCountAll({
+    where: {
+      ...filters,
+    },
+    order: queries.sortBy,
+    attributes: queries.fields,
+    limit: queries.limit,
+    offset: queries.offset,
+  });
+
+  // page & limit
+  const page = queries.page;
+  const limit = queries.limit;
+
+  // pagination object
+  const pagination = {
+    totalDocuments: count,
+    totalPages: Math.ceil(count / limit),
+    currentPage: page,
+    previousPage: page > 1 ? page - 1 : null,
+    nextPage: page < Math.ceil(count / limit) ? page + 1 : null,
+  };
+
+  return { users, pagination };
 };
 
 const getSingleUserById = async (id: string) => {
@@ -21,10 +46,15 @@ const getSingleUserById = async (id: string) => {
   return user;
 };
 
-const createUser = async (body: any, role: string) => {
-  // email is required
-  if (!body.email) throw createError(400, "Email is required.");
-
+const createUser = async (
+  body: {
+    email: string;
+    password: string;
+    name: string;
+    role: string;
+  },
+  role: string
+) => {
   // user check
   const user = await UserModel.findOne({
     where: { email: body.email },
@@ -46,13 +76,22 @@ const createUser = async (body: any, role: string) => {
   // create user
   const result = await UserModel.create({
     ...body,
+    role: body.role as keyof typeof userRoleEnum,
     id: crypto.randomUUID(),
   });
 
   return result;
 };
 
-const updateUserById = async (id: string, body: any) => {
+const updateUserById = async (
+  id: string,
+  body: {
+    email?: string;
+    name?: string;
+    password?: string;
+    role?: string;
+  }
+) => {
   // find user by id
   const user = await UserModel.findByPk(id);
 
@@ -77,22 +116,32 @@ const updateUserById = async (id: string, body: any) => {
     throw createError(400, "You can't update role to superAdmin.");
 
   // update user data
-  await UserModel.update({ ...body }, { where: { id } });
+  await UserModel.update(
+    {
+      ...body,
+      role: body.role as keyof typeof userRoleEnum,
+    },
+    { where: { id } }
+  );
 
   const result = await UserModel.findByPk(id);
 
   return result;
 };
 
-const deleteUserById = async (id: string) => {
+const deleteUserById = async (id: string, role: string) => {
   // find user by id
   const user = await UserModel.findByPk(id);
 
   // if user data not found
   if (!user) throw createError(400, "Couldn't find any user data.");
 
+  // if user is admin and trying to delete other admin
+  if (user.role.toString() === "admin" && role === "admin" && user.id !== id)
+    throw createError(400, "You can't delete admin user.");
+
   // if user is superAdmin
-  if (user.role === "superadmin")
+  if (user.role?.toString() === "superAdmin")
     throw createError(400, "You can't delete superAdmin.");
 
   // delete user data
@@ -107,9 +156,6 @@ const passwordChange = async (id: string, password?: string) => {
   if (!user)
     throw createError(400, "Couldn't find any user account with this id");
 
-  // if password not found
-  if (!password) throw createError(400, "Please provide password");
-
   // update user data
   await UserModel.update(
     {
@@ -122,7 +168,7 @@ const passwordChange = async (id: string, password?: string) => {
 
   // updated data
   const result = await UserModel.findByPk(id, {
-    // attributes: { exclude: ["password"] },
+    attributes: { exclude: ["password"] },
   });
 
   return result;

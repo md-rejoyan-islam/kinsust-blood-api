@@ -1,13 +1,15 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../config/db";
-import hashPassword from "../helper/hashPassword";
+import { hashPassword } from "../helper/hashPassword";
+import { userRoleEnum } from "./../app/types";
+type UserRole = keyof typeof userRoleEnum;
 
 interface UserAttributes {
   id: string;
   name: string;
   email: string;
-  password?: string;
-  role: "superadmin" | "admin" | "moderator";
+  password: string;
+  role: UserRole;
 }
 
 class User extends Model<UserAttributes> implements UserAttributes {
@@ -15,8 +17,7 @@ class User extends Model<UserAttributes> implements UserAttributes {
   public name!: string;
   public email!: string;
   public password!: string;
-  public role!: "superadmin" | "admin" | "moderator";
-
+  public role!: UserRole;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -73,12 +74,12 @@ User.init(
       },
     },
     role: {
-      type: DataTypes.ENUM("superadmin", "admin", "moderator"),
+      type: DataTypes.ENUM(...userRoleEnum),
       defaultValue: "moderator",
       allowNull: false,
       validate: {
         isIn: {
-          args: [["superadmin", "admin", "moderator"]],
+          args: [userRoleEnum],
           msg: "Please enter valid role",
         },
         notNull: {

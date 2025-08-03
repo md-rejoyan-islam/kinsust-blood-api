@@ -1,12 +1,12 @@
-import DonarModel from "../models/donar.model";
-import createError from "http-errors";
-import HistoryModel from "../models/history.model";
-import filterQuery from "../helper/filterQuery";
 import crypto from "crypto";
 import csv from "csvtojson";
-import { readFileSync } from "fs";
-import { checkBDPhoneNumber, isEmail } from "../helper/helper";
 import { Request } from "express";
+import { readFileSync } from "fs";
+import createError from "http-errors";
+import filterQuery from "../helper/filterQuery";
+import { checkBDPhoneNumber, isEmail } from "../helper/helper";
+import DonarModel from "../models/donar.model";
+import HistoryModel from "../models/history.model";
 
 const getAllBloodDonars = async (req: Request) => {
   // filter query
@@ -19,11 +19,9 @@ const getAllBloodDonars = async (req: Request) => {
     },
     order: queries.sortBy,
     attributes: queries.fields,
-    // limit: queries.limit,
+    limit: queries.limit,
     offset: queries.offset,
   });
-  // if no blood found
-  if (!count) throw createError(400, "Couldn't find any donar data.");
 
   // page & limit
   const page = queries.page;
@@ -306,12 +304,12 @@ const uploadDonarFile = async (req: any) => {
 };
 
 export {
+  bulkCreateBloodDonar,
+  bulkDeleteBloodDonar,
+  createBloodDonar,
+  deleteBloodDonarById,
   getAllBloodDonars,
   getSingleBloodDonarById,
-  createBloodDonar,
   updateBloodDonarById,
-  deleteBloodDonarById,
-  bulkCreateBloodDonar,
   uploadDonarFile,
-  bulkDeleteBloodDonar,
 };
