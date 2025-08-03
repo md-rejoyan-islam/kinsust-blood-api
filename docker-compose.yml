@@ -1,0 +1,42 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+
+    environment:
+      DB_HOST: db
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:lts-oraclelinux9
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: test
+      MYSQL_USER: rejoyan
+      MYSQL_PASSWORD: 12345678
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-ppassword",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:
